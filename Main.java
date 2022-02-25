@@ -1,63 +1,72 @@
-/*
-Congratulations, all you have to do now, is decrypt this file in order to get my message.
-You can (technically) have a brute force solution as well, but it's not elegant, and wouldn't work well with non-dictionary words. This requires the round length, regardless.
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-The other way I thought of doing it was to give you a file with previous rounds. This is essentially the "private key" that decrypts my message. 
+/**
+ * In case you want the solution, here it is:
+ * Y2xhc3MgRGVjcnlwdGVyIHsNCiAgICBwcml2YXRlIFN0cmluZyB0ZXh0Ow0KICAgIHByaXZhdGUgaW50IHJvdW5kczsNCiAgICBwcml2YXRlIExpc3Q8SW50ZWdlcj4ga2V5TGlzdDsNCiAgICBwdWJsaWMgRGVjcnlwdGVyKFN0cmluZyB0ZXh0LCBMaXN0PEludGVnZXI+IGtleUxpc3QpIHsNCiAgICAgICAgdGhpcy5rZXlMaXN0ID0ga2V5TGlzdDsNCiAgICAgICAgdGhpcy5yb3VuZHMgPSBrZXlMaXN0LnNpemUoKTsNCiAgICAgICAgdGhpcy50ZXh0ID0gdGV4dDsNCiAgICB9DQoNCiAgICBwdWJsaWMgU3RyaW5nIGRlY3J5cHQoKSB7DQogICAgICAgIFN0cmluZyBkZWNyeXB0ZWQgPSB0ZXh0Ow0KICAgICAgICBmb3IoaW50IGkgPSAwOyBpIDwgcm91bmRzOyBpKyspIHsNCiAgICAgICAgICAgIGludCBrZXkgPSBrZXlMaXN0LmdldChyb3VuZHMgLSAoaSArIDEpKTsNCiAgICAgICAgICAgIGRlY3J5cHRlZCA9IHhvcihkZWNyeXB0ZWQsIGtleSk7DQogICAgICAgICAgICBkZWNyeXB0ZWQgPSBpc2hpZnQoZGVjcnlwdGVkLCBrZXkpOw0KICAgICAgICB9DQogICAgICAgIHJldHVybiBkZWNyeXB0ZWQ7DQogICAgfQ0KDQogICAgcHVibGljIFN0cmluZyB4b3IoU3RyaW5nIHRleHQsIGludCBrZXkpIHsNCiAgICAgICAgU3RyaW5nIGJ1aWxkZXIgPSAiIjsNCiAgICAgICAgZm9yKGludCBpID0gdGV4dC5sZW5ndGgoKSAtIDE7IGkgPj0gMDsgaS0tKSB7DQogICAgICAgICAgICBidWlsZGVyID0gU3RyaW5nLnZhbHVlT2YoKGNoYXIpKHRleHQuY2hhckF0KGkpIF4gKChpID09IHRleHQubGVuZ3RoKCkgLSAxID8gJ2wnIDogYnVpbGRlci5jaGFyQXQoMCkpKSkpICsgYnVpbGRlcjsNCiAgICAgICAgfQ0KICAgICAgICByZXR1cm4gYnVpbGRlcjsNCiAgICB9DQoNCiAgICBwdWJsaWMgU3RyaW5nIGlzaGlmdChTdHJpbmcgdGV4dCwgaW50IGtleSkgew0KICAgICAgICByZXR1cm4gdGV4dC5zdWJzdHJpbmcoMiwgdGV4dC5sZW5ndGgoKSkgKyB0ZXh0LnN1YnN0cmluZygwLCAxKTsNCiAgICB9DQp9
+ * Just Base64 Decode it. To be clear, this is the code, not the "secrert message".
+ */
 
-This encryption algorithm is probably flawed in a lot of other ways as well. 
+public class Main {
+    public static void main(String[] args) throws IOException {
+        List<Integer> list = generate(100);
+        Encrypter encrypter = new Encrypter("This is an example", list);
+        System.out.println(encrypter.encrypt());
+    }
 
-If you want the solution, just decode this Base64 String.
-Y2xhc3MgRGVjcnlwdGVyIHsKICBwcml2YXRlIFN0cmluZyB0ZXh0OwogIHByaXZhdGUgaW50IHJvdW5kczsKICBwdWJsaWMgRGVjcnlwdGVyKFN0cmluZyB0ZXh0KSB7CiAgICB0aGlzLnRleHQgPSB0ZXh0OwogICAgdGhpcy5yb3VuZHMgPSAxMDAwOwogIH0KCiAgcHVibGljIFN0cmluZyBkZWNyeXB0KCkgdGhyb3dzIEV4Y2VwdGlvbiB7CiAgICBpbnRbXVtdIGFycmF5ID0gbmV3IGludFsxMDAwXVt0ZXh0Lmxlbmd0aCgpXTsKICAgIFNjYW5uZXIgc2Nhbm5lciA9IG5ldyBTY2FubmVyKG5ldyBGaWxlKCJkZXRhaWxzLnR4dCIpKTsKICAgIGludCBrID0gMDsKICAgIHdoaWxlKHNjYW5uZXIuaGFzTmV4dExpbmUoKSkgewogICAgICBTdHJpbmcgbGluZSA9IHNjYW5uZXIubmV4dExpbmUoKTsKICAgICAgU3RyaW5nW10gc3BsaXQgPSBsaW5lLnNwbGl0KCIgIik7CiAgICAgIGZvcihpbnQgaiA9IDA7IGogPCBzcGxpdC5sZW5ndGg7IGorKykgewogICAgICAgIGFycmF5W2tdW2pdID0gSW50ZWdlci5wYXJzZUludChzcGxpdFtqXSk7CiAgICAgIH0KICAgICAgaysrOwogICAgfQogICAgU3RyaW5nIGRlY3J5cHRlZCA9IHRoaXMudGV4dDsKICAgIGludCBsZW4gPSB0aGlzLnRleHQubGVuZ3RoKCk7CiAgICBmb3IoaW50IGkgPSByb3VuZHM7IGkgPj0gMTsgaS0tKSB7CiAgICAgIFN0cmluZyBidWlsZGVyID0gIiI7CiAgICAgIGZvcihpbnQgaiA9IGxlbiA7IGogPj0gMTsgai0tKSB7CiAgICAgICAgaW50IG9mZnNldCA9IGFycmF5W2kgLSAxXVtqIC0gMV0gLyAoaiAqIGkpOwogICAgICAgIGJ1aWxkZXIgPSAoY2hhcikob2Zmc2V0KSArIGJ1aWxkZXI7CiAgICAgIH0KICAgICAgZGVjcnlwdGVkID0gYnVpbGRlcjsKICAgIH0KICAgIHJldHVybiBkZWNyeXB0ZWQ7CiAgfQ==
-*/
-
-import java.util.*;
-import java.io.*;
-
-class Main {
-  private final static String ENCRYPTED_MESSAGE = "egbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegbedcaegb";
-  public static void main(String[] args) throws Exception {
-    String toEncrypt = "This is an example message";
-    Encrypter encrypter = new Encrypter(toEncrypt);
-    System.out.println(encrypter.encrypt());
-  }
+    public static List<Integer> generate(int amount) {
+        List<Integer> list = new ArrayList<Integer>();
+        for(int i = 1; i <= amount; i++) {
+            int j = (int)(amount * i * Math.PI);
+            list.add(j);
+        }
+        return list;
+    }
 }
 
 class Encrypter {
 
-  private String text;
-  private int rounds;
-  public Encrypter(String text) {
-    this.text = text;
-    this.rounds = 1000;
-  }
+    private String text;
+    private int rounds;
+    private List<Integer> keyList;
+    public Encrypter(String text, List<Integer> keyList) {
+        this.keyList = keyList;
+        this.rounds = keyList.size();
+        this.text = text;
+    }
 
-  public String encrypt() throws IOException {
-    String encrypted = this.text;
-    int len = this.text.length();
-    StringBuilder roundDetails = new StringBuilder();
-    File file = new File("details.txt");
-    if(!file.exists()) {
-      file.createNewFile();
+    public String encrypt() {
+        String encrypted = text;
+        for(int i = 0; i < rounds; i++) {
+            encrypted = shift(encrypted, keyList.get(i));
+            encrypted = xor(encrypted, keyList.get(i));
+        }
+        return encrypted;
     }
-    PrintWriter writer = new PrintWriter(file);
-    for(int i = 1; i <= rounds; i++) {
-      StringBuilder sb = new StringBuilder();
-      for(int j = 1; j <= len; j++) {
-        char c = encrypted.charAt(j - 1);
-        int offset = (int)(j * i * (int)c) % ('Z' - 'a');
-        c = (char)('a' + offset);
-        sb.append(c);
-        roundDetails.append((j * i * encrypted.charAt(j - 1)) + " ");
-      }
-      String build = roundDetails.toString().trim();
-      if(i != rounds) {
-        build += "\n";
-      }
-      writer.write(build);
-      roundDetails = new StringBuilder();
-      encrypted = sb.toString();
+
+    public void printToFile() throws IOException {
+        File file = new File("encrypted.txt");
+        if(!file.exists()) {
+            file.createNewFile();
+        }
+        PrintWriter writer = new PrintWriter(file);
+        writer.write(encrypt());
+        writer.close();
     }
-    writer.close();
-    return encrypted;
-  }
+
+    public String shift(String text, int key) {
+        return text.substring(text.length() - 1) + (char)(key % 73) + text.substring(0, text.length() - 1);
+    }
+
+    public String xor(String text, int key) {
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0 ; i < text.length(); i++) {
+            sb.append(String.valueOf((char)(text.charAt(i) ^ ((i == text.length() - 1 ? 'l' : text.charAt(i + 1))))));
+        }
+        return sb.toString();
+    }
 }
